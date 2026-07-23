@@ -1,3 +1,10 @@
+# WOW Bank Vault - Full version
+
+This is the full python version of the WOW vault game.  Key considerations:
+* No blocking waits
+* State machines for the various games and "secret code" state
+
+(besides, Python is cooler than block code...)
 
 > Open this page at [https://gsalaman.github.io/wow_vault_full/](https://gsalaman.github.io/wow_vault_full/)
 
