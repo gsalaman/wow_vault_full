@@ -80,7 +80,7 @@ def drive_key_state():
         key_process_flash()
 
 def shape_game_reset():
-    global remaining_shapes, shape_list, current_shape, shape_leds
+    global remaining_shapes, shape_list, current_shape, shape_leds, current_shape_state
 
     # two cleanup items:  make sure the vault is closed, and make sure our strip is off
     # may not stricly be necessary, but good defensive practice.
@@ -143,6 +143,9 @@ def clear_shapes():
 
 def shape_idle_state():
     # currently we do nothing here
+    # eventually, we can use this for cases where we want the shape game to 
+    # do nothing...like secret codes, or if we want to go sequential between
+    # the key and shape games.
     pass
 
 def shape_input_state():
@@ -151,7 +154,7 @@ def shape_input_state():
     # is the current shape button currently pressed?
     relevant_pin = get_pin_for_shape(current_shape)
     if (pins.digital_read_pin(relevant_pin) == 1):
-        turn_on_all_found_shapes()
+        # turn_on_all_found_shapes()
         current_shape_state = "flash"
         shape_state_count = 0
 
@@ -164,7 +167,6 @@ def shape_flash_state():
         # if we're in the bottom half of the second, we'll turn it on.
         # top half, we'll  turn it off
         if (time_now % 1000 < 500):
-            
             turn_shape_on(current_shape)
         else:
             turn_shape_off(current_shape)
@@ -184,11 +186,63 @@ def shape_flash_state():
                 current_shape_state = "input"
 
             else: 
-                # Thats all of them!  move on to the success state.
-                pass
+                # Thats all of them!  Open the vault and move on to the success state.
+                pins.digital_write_pin(DigitalPin.P8, 1)
+                last_shape_time = 0
+                shape_state_count = 0
+                current_shape_state = "success"
 
 def shape_success_state():
-    pass
+    global shape_state_count, last_shape_time
+    # cycle shapes from left to right
+    # we're gonna use the shape state count to keep track of where we are in our cycle
+    # first four light up all shapes in order, next four turn them off in order.
+    # Then repeat N times...so N*8 counts and we're done.
+    shape_repeats = 3
+    time_now = input.running_time()
+    if (time_now > last_shape_time + 500):
+        if (shape_state_count >= shape_repeats * 8):
+            # we're done...go back to the beginning.
+            shape_game_reset()
+        else:
+            
+            # there's probably a more elegant way of doing this...
+            if (shape_state_count % 8 == 0):
+                # light up the circle
+                turn_shape_on("circle")
+
+            elif (shape_state_count % 8 == 1):
+                # light up the square 
+                turn_shape_on("square")
+
+            elif (shape_state_count % 8 == 2):
+                # light up the triangle
+                turn_shape_on("triangle")
+
+            elif (shape_state_count % 8 == 3):
+                #light up the heart
+                turn_shape_on("heart")
+
+            elif (shape_state_count % 8 == 4):
+                # turn off the circle
+                turn_shape_off("circle")
+
+            elif (shape_state_count % 8 == 5):
+                # turn off the square
+                turn_shape_off("square")
+
+            elif (shape_state_count % 8 == 6):
+                # turn off the triangle
+                turn_shape_off("triangle")
+
+            else:
+                # turn off the heart_leds
+                turn_shape_off("heart")
+
+            last_shape_time = time_now
+            shape_state_count = shape_state_count + 1
+
+
 
 def drive_shape_state():
     global current_shape_state

@@ -103,7 +103,7 @@ function shape_game_reset() {
     current_shape = remaining_shapes[current_shape_index]
     //  show the first shape.
     turn_shape_on(current_shape)
-    let current_shape_state = "input"
+    current_shape_state = "input"
 }
 
 function get_pin_for_shape(shape: string): number {
@@ -166,6 +166,9 @@ function clear_shapes() {
 
 function shape_idle_state() {
     //  currently we do nothing here
+    //  eventually, we can use this for cases where we want the shape game to 
+    //  do nothing...like secret codes, or if we want to go sequential between
+    //  the key and shape games.
     
 }
 
@@ -174,7 +177,7 @@ function shape_input_state() {
     //  is the current shape button currently pressed?
     let relevant_pin = get_pin_for_shape(current_shape)
     if (pins.digitalReadPin(relevant_pin) == 1) {
-        turn_on_all_found_shapes()
+        //  turn_on_all_found_shapes()
         current_shape_state = "flash"
         shape_state_count = 0
     }
@@ -209,8 +212,11 @@ function shape_flash_state() {
                 turn_shape_on(current_shape)
                 current_shape_state = "input"
             } else {
-                //  Thats all of them!  move on to the success state.
-                
+                //  Thats all of them!  Open the vault and move on to the success state.
+                pins.digitalWritePin(DigitalPin.P8, 1)
+                last_shape_time = 0
+                shape_state_count = 0
+                current_shape_state = "success"
             }
             
         }
@@ -220,6 +226,50 @@ function shape_flash_state() {
 }
 
 function shape_success_state() {
+    
+    //  cycle shapes from left to right
+    //  we're gonna use the shape state count to keep track of where we are in our cycle
+    //  first four light up all shapes in order, next four turn them off in order.
+    //  Then repeat N times...so N*8 counts and we're done.
+    let shape_repeats = 3
+    let time_now = input.runningTime()
+    if (time_now > last_shape_time + 500) {
+        if (shape_state_count >= shape_repeats * 8) {
+            //  we're done...go back to the beginning.
+            shape_game_reset()
+        } else {
+            //  there's probably a more elegant way of doing this...
+            if (shape_state_count % 8 == 0) {
+                //  light up the circle
+                turn_shape_on("circle")
+            } else if (shape_state_count % 8 == 1) {
+                //  light up the square 
+                turn_shape_on("square")
+            } else if (shape_state_count % 8 == 2) {
+                //  light up the triangle
+                turn_shape_on("triangle")
+            } else if (shape_state_count % 8 == 3) {
+                // light up the heart
+                turn_shape_on("heart")
+            } else if (shape_state_count % 8 == 4) {
+                //  turn off the circle
+                turn_shape_off("circle")
+            } else if (shape_state_count % 8 == 5) {
+                //  turn off the square
+                turn_shape_off("square")
+            } else if (shape_state_count % 8 == 6) {
+                //  turn off the triangle
+                turn_shape_off("triangle")
+            } else {
+                //  turn off the heart_leds
+                turn_shape_off("heart")
+            }
+            
+            last_shape_time = time_now
+            shape_state_count = shape_state_count + 1
+        }
+        
+    }
     
 }
 
